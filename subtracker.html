@@ -1,0 +1,254 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
+import startOfWeek from 'date-fns/startOfWeek';
+import getDay from 'date-fns/getDay';
+import enUS from 'date-fns/locale/en-US';
+import { addMonths, addYears, differenceInDays, startOfDay, isBefore, isAfter } from 'date-fns';
+import { Trash2, Plus, DollarSign } from 'lucide-react';
+
+// CSS for the calendar library
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// Setup Calendar Localizer
+const locales = { 'en-US': enUS };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
+
+// Colors for the color picker
+const PRESET_COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6'];
+
+function App() {
+  const [subs, setSubs] = useState(() => {
+    const saved = localStorage.getItem('my-subs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '',
+    startDate: format(new Date(), 'yyyy-MM-dd'),
+    cycle: 'monthly', // or 'yearly'
+    color: '#3B82F6'
+  });
+
+  // Save to local storage whenever subs change
+  useEffect(() => {
+    localStorage.setItem('my-subs', JSON.stringify(subs));
+  }, [subs]);
+
+  // --- LOGIC: Transform Subscriptions into Calendar Events ---
+  const generateEvents = () => {
+    const events = [];
+    // We only want to generate events for the current viewing window roughly
+    // For simplicity, let's generate events for the current year +/- 1 year
+    const today = new Date();
+    
+    subs.forEach(sub => {
+      let currentCycleStart = startOfDay(new Date(sub.startDate));
+      const loopLimit = addYears(today, 1); // Generate up to next year
+
+      // Prevent infinite loops if dates are weird
+      let safeGuard = 0; 
+
+      while (isBefore(currentCycleStart, loopLimit) && safeGuard < 100) {
+        let nextCycleStart;
+        if (sub.cycle === 'monthly') {
+          nextCycleStart = addMonths(currentCycleStart, 1);
+        } else {
+          nextCycleStart = addYears(currentCycleStart, 1);
+        }
+
+        // Create the event bar (Visual representation)
+        // It starts at the cycle start and ends right before the renewal
+        events.push({
+          title: `${sub.name} ($${sub.price})`,
+          start: currentCycleStart,
+          end: nextCycleStart, // Visual bar ends here
+          resource: sub,
+        });
+
+        currentCycleStart = nextCycleStart;
+        safeGuard++;
+      }
+    });
+    return events;
+  };
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.price) return;
+
+    const newSub = {
+      id: Date.now(),
+      ...formData,
+      price: parseFloat(formData.price)
+    };
+
+    setSubs([...subs, newSub]);
+    // Reset form slightly but keep date/color for convenience
+    setFormData({ ...formData, name: '', price: '' });
+  };
+
+  const handleDelete = (id) => {
+    setSubs(subs.filter(s => s.id !== id));
+  };
+
+  // Style the events on the calendar based on user color
+  const eventStyleGetter = (event) => {
+    return {
+      style: {
+        backgroundColor: event.resource.color,
+        opacity: 0.8,
+        color: 'white',
+        borderRadius: '4px',
+        display: 'block'
+      }
+    };
+  };
+
+  // Calculate Total Monthly Cost
+  const totalMonthly = subs.reduce((acc, sub) => {
+    let monthlyPrice = sub.price;
+    if (sub.cycle === 'yearly') monthlyPrice = sub.price / 12;
+    return acc + monthlyPrice;
+  }, 0);
+
+  return (
+    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+      
+      {/* --- SIDEBAR: Input & List --- */}
+      <div className="w-1/3 max-w-sm bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
+        <div className="p-6 border-b border-gray-100">
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">SubTracker</h1>
+          <p className="text-sm text-gray-500">Visualize your expenses</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleAdd} className="p-6 space-y-4 bg-gray-50">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Service Name</label>
+            <input 
+              type="text" 
+              placeholder="e.g. Netflix" 
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Cost</label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-400">$</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="0.00" 
+                  className="w-full p-2 pl-7 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.price}
+                  onChange={e => setFormData({...formData, price: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Start Date</label>
+              <input 
+                type="date" 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                value={formData.startDate}
+                onChange={e => setFormData({...formData, startDate: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+             <div className="flex-1">
+              <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Cycle</label>
+              <select 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                value={formData.cycle}
+                onChange={e => setFormData({...formData, cycle: e.target.value})}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Color Code</label>
+            <div className="flex gap-2 flex-wrap">
+              {PRESET_COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setFormData({...formData, color: c})}
+                  className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${formData.color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <button className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition flex items-center justify-center gap-2 font-medium">
+            <Plus size={18} /> Add Subscription
+          </button>
+        </form>
+
+        {/* Stats */}
+        <div className="px-6 py-4 bg-blue-50 border-y border-blue-100 flex justify-between items-center">
+          <span className="text-blue-800 font-semibold">Total / Month</span>
+          <span className="text-blue-900 font-bold text-lg">${totalMonthly.toFixed(2)}</span>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {subs.length === 0 && <p className="text-center text-gray-400 mt-10 text-sm">No subscriptions yet.</p>}
+          
+          {subs.map(sub => (
+            <div key={sub.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: sub.color }}></div>
+                <div>
+                  <p className="font-bold text-gray-800">{sub.name}</p>
+                  <p className="text-xs text-gray-500">{sub.cycle} • ${sub.price}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => handleDelete(sub.id)}
+                className="text-gray-400 hover:text-red-500 transition"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* --- MAIN: Calendar Area --- */}
+      <div className="flex-1 p-8 flex flex-col h-full">
+        <Calendar
+          localizer={localizer}
+          events={generateEvents()}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: '100%' }}
+          eventPropGetter={eventStyleGetter}
+          views={['month', 'agenda']}
+          defaultView="month"
+          popup
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;

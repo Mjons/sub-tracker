@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* React Big Calendar Overrides for a cleaner look */
+.rbc-calendar { font-family: sans-serif; }
+.rbc-event { border: none !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.rbc-today { background-color: #f3f4f6; }

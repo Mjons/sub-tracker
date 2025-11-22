@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "name": "Netflix",
+    "price": 15.99,
+    "startDate": "2024-01-15",
+    "cycle": "monthly",
+    "color": "#EF4444"
+  },
+  {
+    "id": 2,
+    "name": "Spotify",
+    "price": 9.99,
+    "startDate": "2024-02-01",
+    "cycle": "monthly",
+    "color": "#10B981"
+  },
+  {
+    "id": 3,
+    "name": "Adobe Creative Cloud",
+    "price": 599.88,
+    "startDate": "2024-03-10",
+    "cycle": "yearly",
+    "color": "#3B82F6"
+  },
+  {
+    "id": 4,
+    "name": "Amazon Prime",
+    "price": 139,
+    "startDate": "2024-01-01",
+    "cycle": "yearly",
+    "color": "#F59E0B"
+  },
+  {
+    "id": 5,
+    "name": "YouTube Premium",
+    "price": 11.99,
+    "startDate": "2024-04-15",
+    "cycle": "monthly",
+    "color": "#EC4899"
+  }
+]
