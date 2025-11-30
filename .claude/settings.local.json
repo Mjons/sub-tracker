@@ -4,7 +4,11 @@
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: SubTracker - Visual subscription management app\n\nFeatures:\n- Visual calendar interface for subscription tracking\n- Random color assignment for new subscriptions\n- Inline editing (name, price, cycle, start date)\n- Cancellation tracking with visual indicators\n- Monthly cost calculator (excluding cancelled items)\n- Import/export functionality\n- Local storage persistence\n- Tailwind CSS styling with react-big-calendar\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
